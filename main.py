@@ -29,6 +29,7 @@ scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
 
 
 def check_unread():
+    sleep(2)
     dialogs = api.messages.getDialogs(count=200, unread=True)
     if dialogs['count'] > 0:
         msg_ids = []
@@ -421,10 +422,6 @@ def anything(bot, update):
     return
 
 
-updater = Updater(token)
-updater.start_webhook(listen="0.0.0.0", port=int(os.environ.get('PORT', '5000')), url_path=token)
-updater.bot.setWebhook("https://{}.herokuapp.com/{}".format(app_name, token))
-
 tg = Bot(token)
 api = vk_requests.create_api(app_id=app_id, login=login,
                              password=password, phone_number=phone_number,
@@ -435,6 +432,10 @@ Thread(target=online, args=[]).start()
 
 poll = longpoll_init()
 Thread(target=longpoll_loop, args=[]).start()
+
+updater = Updater(token)
+updater.start_webhook(listen="0.0.0.0", port=int(os.environ.get('PORT', '5000')), url_path=token)
+updater.bot.setWebhook("https://{}.herokuapp.com/{}".format(app_name, token))
 
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('h', hello))

@@ -32,8 +32,9 @@ cmd_list = '''
 '''
 
 bot_name = os.environ.get('BOT_USERNAME')
-cmd_arg_1 = ['/sethook', '/delhook', '/i', '/we', '/d', '/l', '/a']
-for command in cmd_arg_1:
+cmd_arg_1 = []
+for command in ['/sethook', '/delhook', '/i', '/we', '/d', '/l', '/a']:
+    cmd_arg_1.append(command)
     cmd_arg_1.append(command + bot_name)
 
 num = {
