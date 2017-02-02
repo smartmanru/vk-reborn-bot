@@ -11,21 +11,25 @@ import vk_requests
 from vk_requests import exceptions
 import requests
 import keen
-
-import utils
+try:
+    import utils
+except Exception as e:
+    print(str(e))
 from utils import parse_request, escapize, secrets_help, blacklist_strings
 from longpoll import LongPoll
-
-admin = int(os.environ.get('ADMIN_ID'))
-log_channel = os.environ.get('LOG_CHAN')
-token = os.environ.get('TOKEN')
-app_name = os.environ.get('APPNAME')
-app_id = os.environ.get('VK_APP_ID')
-login = os.environ.get('VK_LOGIN')
-phone_number = '+' + str(login)
-password = os.environ.get('VK_PASS')
-scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
-         'messages', 'wall', 'notifications', 'offline', 'groups', 'docs']
+try:
+    admin = int(os.environ.get('ADMIN_ID'))
+    log_channel = os.environ.get('LOG_CHAN')
+    token = os.environ.get('TOKEN')
+    app_name = os.environ.get('APPNAME')
+    app_id = os.environ.get('VK_APP_ID')
+    login = os.environ.get('VK_LOGIN')
+    phone_number = '+' + str(login)
+    password = os.environ.get('VK_PASS')
+    scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
+             'messages', 'wall', 'notifications', 'offline', 'groups', 'docs']
+except Exception as e:
+    print('2 ' + str(e))
 
 
 def check_unread():
