@@ -22,14 +22,13 @@ token = os.environ.get('TOKEN')
 app_name = os.environ.get('APPNAME')
 app_id = os.environ.get('VK_APP_ID')
 login = os.environ.get('VK_LOGIN')
-phone_number = '+' + login
+phone_number = '+' + str(login)
 password = os.environ.get('VK_PASS')
 scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
          'messages', 'wall', 'notifications', 'offline', 'groups', 'docs']
 
 
 def check_unread():
-    sleep(2)
     dialogs = api.messages.getDialogs(count=200, unread=True)
     if dialogs['count'] > 0:
         msg_ids = []
