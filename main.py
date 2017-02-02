@@ -29,6 +29,7 @@ scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
 
 
 def check_unread():
+    sleep(2)
     dialogs = api.messages.getDialogs(count=200, unread=True)
     if dialogs['count'] > 0:
         msg_ids = []
@@ -426,7 +427,6 @@ api = vk_requests.create_api(app_id=app_id, login=login,
                              password=password, phone_number=phone_number,
                              api_version='5.62', scope=scope)
 
-sleep(1)
 Thread(target=check_unread, args=[]).start()
 Thread(target=online, args=[]).start()
 
