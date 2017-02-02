@@ -312,7 +312,7 @@ def info(bot, update, cmd=None):
             p.write(photo.content)
         with open(file_name, 'rb') as p:
             tg.send_photo(chat_id=update.message.chat.id, caption=caption, photo=p)
-        keen.add_event("info", {"by_user": update.message.from_user.id, "req_user": int(cmd[0])})
+        keen.add_event("info", {"by_user": update.message.from_user.id, "req_user": cmd[0]})
         os.remove(file_name)
 
 
@@ -387,7 +387,7 @@ def friend(bot, update, cmd=None):
         update.message.reply_text(emojize('Хорошо :relaxed:', use_aliases=True))
         name = user['first_name'] + ' ' + user['last_name']
         utils.dbadd('activity', '➕️️ ' + name + ' - ' + str(user['id']))
-        keen.add_event("friend", {"by_user": update.message.from_user.id, "req_user": int(cmd[0])})
+        keen.add_event("friend", {"by_user": update.message.from_user.id, "req_user": cmd[0]})
 
 
 @parse_request
