@@ -1,0 +1,6 @@
+emoji
+python-telegram-bot
+requests
+vk_requests
+redis
+keen
