@@ -11,25 +11,21 @@ import vk_requests
 from vk_requests import exceptions
 import requests
 import keen
-try:
-    import utils
-except Exception as e:
-    print(str(e))
+
+import utils
 from utils import parse_request, escapize, secrets_help, blacklist_strings
 from longpoll import LongPoll
-try:
-    admin = int(os.environ.get('ADMIN_ID'))
-    log_channel = os.environ.get('LOG_CHAN')
-    token = os.environ.get('TOKEN')
-    app_name = os.environ.get('APPNAME')
-    app_id = os.environ.get('VK_APP_ID')
-    login = os.environ.get('VK_LOGIN')
-    phone_number = '+' + str(login)
-    password = os.environ.get('VK_PASS')
-    scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
-             'messages', 'wall', 'notifications', 'offline', 'groups', 'docs']
-except Exception as e:
-    print('2 ' + str(e))
+
+admin = int(os.environ.get('ADMIN_ID'))
+log_channel = os.environ.get('LOG_CHAN')
+token = os.environ.get('TOKEN')
+app_name = os.environ.get('APPNAME')
+app_id = os.environ.get('VK_APP_ID')
+login = os.environ.get('VK_LOGIN')
+phone_number = '+' + str(login)
+password = os.environ.get('VK_PASS')
+scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
+         'messages', 'wall', 'notifications', 'offline', 'groups', 'docs']
 
 
 def check_unread():
@@ -425,6 +421,10 @@ def anything(bot, update):
     return
 
 
+updater = Updater(token)
+updater.start_webhook(listen="0.0.0.0", port=int(os.environ.get('PORT', '5000')), url_path=token)
+updater.bot.setWebhook("https://{}.herokuapp.com/{}".format(app_name, token))
+
 tg = Bot(token)
 api = vk_requests.create_api(app_id=app_id, login=login,
                              password=password, phone_number=phone_number,
@@ -435,10 +435,6 @@ Thread(target=online, args=[]).start()
 
 poll = longpoll_init()
 Thread(target=longpoll_loop, args=[]).start()
-
-updater = Updater(token)
-updater.start_webhook(listen="0.0.0.0", port=int(os.environ.get('PORT', '5000')), url_path=token)
-updater.bot.setWebhook("https://{}.herokuapp.com/{}".format(app_name, token))
 
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('h', hello))
