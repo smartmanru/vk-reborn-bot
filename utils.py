@@ -19,7 +19,7 @@ r = redis.from_url(os.environ.get("REDIS_URL"), charset="utf-8", decode_response
 
 blacklist_strings = ['Ты :shit:', 'Повтори, я не расслышал :information_desk_person:',
                      'Ооо... Ты в чёрном списке :smiling_imp:']
-secrets_help = '/we db.add/del.send/like/hook\n/we drop.send\n/we lyks'
+secrets_help = '/we db.add/del.send/like/hook\n/we drop.send\n/we lyks.10'
 
 help_text = '<b>Список команд:</b>'
 cmd_list = '''

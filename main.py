@@ -29,10 +29,11 @@ scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
          'messages', 'wall', 'notifications', 'offline', 'groups', 'docs']
 
 
-def put_task_to_queue():
+def queue_worker():
     while True:
         like_post(q.get())
         q.task_done()
+
 
 def check_unread():
     dialogs = api.messages.getDialogs(count=200, unread=True)
@@ -113,6 +114,7 @@ def another_like_function(items, success, error, who):
 
 
 def like_post(args):
+    print('Call function like_post')
     owner, chat_id, name, count, who, msg_id = args[0], args[1], args[2], args[3], args[4], args[5]
     already_liked = 0
     wall = get_wall(owner, count)
@@ -513,7 +515,7 @@ api = vk_requests.create_api(app_id=app_id, login=login,
 accounts = 1
 q = Queue()
 for i in range(accounts):
-    t = Thread(target=put_task_to_queue)
+    t = Thread(target=queue_worker)
     t.setDaemon(True)
     t.start()
 
