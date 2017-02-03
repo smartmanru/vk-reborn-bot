@@ -257,6 +257,9 @@ def send(bot, update, cmd=None):
         except exceptions.VkException as exception:
             update.message.reply_text(str(exception))
             return
+        except IndexError:
+            update.message.reply_text('Пошёл на хуй')
+            return
         try:
             data = api.messages.send(peer_id=user['id'], message=cmd[1])
         except exceptions.VkException as exception:
@@ -420,6 +423,7 @@ def friend(bot, update, cmd=None):
 
 @parse_request
 def like(bot, update, cmd=None):
+    print('Call like(): ' + str(update.message.text))
     blacklist = utils.dbget('like')
     if blacklist is not None:
         if str(update.message.from_user.id) in blacklist:
@@ -435,7 +439,9 @@ def like(bot, update, cmd=None):
         group = api.groups.getById(group_id=cmd[0])[0]
         owner = 0 - group['id']
         name = group['name']
+    print('calling db')
     available = utils.db_like(update.message.from_user.id)
+    print(str(available) + ' likes for ' + str(update.message.from_user.id))
     count = 10 if available >= 10 else available
     if count <= 0:
         update.message.reply_text(emojize('У вас не осталось сердечек :disappointed:', use_aliases=True))
