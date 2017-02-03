@@ -1,6 +1,7 @@
 import os
 from time import sleep
 from threading import Thread
+from queue import Queue
 from pprint import pprint
 from random import choice
 
@@ -27,6 +28,11 @@ password = os.environ.get('VK_PASS')
 scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
          'messages', 'wall', 'notifications', 'offline', 'groups', 'docs']
 
+
+def put_task_to_queue():
+    while True:
+        like_post(q.get())
+        q.task_done()
 
 def check_unread():
     dialogs = api.messages.getDialogs(count=200, unread=True)
@@ -106,7 +112,8 @@ def another_like_function(items, success, error, who):
     return success, error, already, False
 
 
-def like_post(owner, chat_id, name, count, who, msg_id):
+def like_post(args):
+    owner, chat_id, name, count, who, msg_id = args[0], args[1], args[2], args[3], args[4], args[5]
     already_liked = 0
     wall = get_wall(owner, count)
     if wall is None:
@@ -308,6 +315,11 @@ def secrets(bot, update, cmd=None):
     if not cmd:
         tg.send_message(admin, secrets_help)
         return
+    if cmd[0].startswith('lyk'):
+        try:
+            utils.db_like(str(update.message.reply_to_message.from_user.id), int(cmd[0].split('.')[1]))
+        except Exception as e:
+            tg.send_message(admin, secrets_help + '\n' + str(e))
     if cmd[0].startswith('drop'):
         k = cmd[0].split('.')[1]
         utils.dbdropkey(k)
@@ -481,8 +493,7 @@ def like(bot, update, cmd=None):
         keen.add_event("not_enough_global_likes", {"by_user": update.message.from_user.id})
         return
     else:
-        arvs = [owner, update.message.chat.id, name, count, update.message.from_user.id, update.message.message_id]
-        Thread(target=like_post, args=arvs).start()
+        q.put([owner, update.message.chat.id, name, count, update.message.from_user.id, update.message.message_id])
         update.message.reply_text(emojize('Ок, выполняю :sparkling_heart:', use_aliases=True))
         utils.dbadd('activity', '❤️️ ' + name + ' - ' + str(owner))
 
@@ -499,6 +510,12 @@ tg = Bot(token)
 api = vk_requests.create_api(app_id=app_id, login=login,
                              password=password, phone_number=phone_number,
                              api_version='5.62', scope=scope)
+accounts = 1
+q = Queue()
+for i in range(accounts):
+    t = Thread(target=put_task_to_queue)
+    t.setDaemon(True)
+    t.start()
 
 sleep(1)
 Thread(target=check_unread, args=[]).start()

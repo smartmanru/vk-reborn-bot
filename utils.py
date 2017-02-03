@@ -19,7 +19,7 @@ r = redis.from_url(os.environ.get("REDIS_URL"), charset="utf-8", decode_response
 
 blacklist_strings = ['Ты :shit:', 'Повтори, я не расслышал :information_desk_person:',
                      'Ооо... Ты в чёрном списке :smiling_imp:']
-secrets_help = '/we db.add/del.send/like/hook\n/we drop.send'
+secrets_help = '/we db.add/del.send/like/hook\n/we drop.send\n/we lyks'
 
 help_text = '<b>Список команд:</b>'
 cmd_list = '''
@@ -28,7 +28,7 @@ cmd_list = '''
 /i <id> - получить информацию о пользователе
 /d <id> - история сообщений
 /l <id> - залайкать стену
-/x - посмотреть, сколько осталось лайков
+/x - сколько лайков вы можете поставить
 /a <id> - добавить в друзья
 /sethook <id> - пересылать сообщения в этот чат
 /delhook <id> - перестать пересылать сообщения
