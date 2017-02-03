@@ -418,6 +418,13 @@ def counts(bot, update):
     update.message.reply_text(emojize('Вы можете поставить ещё ' + str(x) + ' сердечек!', use_aliases=True))
 
 
+def total_count(bot, update):
+    if update.message.from_user.id != admin:
+        return
+    x = utils.limits()
+    update.message.reply_text(str(x))
+
+
 @parse_request
 def friend(bot, update, cmd=None):
     if cmd:
@@ -506,6 +513,7 @@ updater.dispatcher.add_handler(CommandHandler('d', history))
 updater.dispatcher.add_handler(CommandHandler('l', like))
 updater.dispatcher.add_handler(CommandHandler('a', friend))
 updater.dispatcher.add_handler(CommandHandler('x', counts))
+updater.dispatcher.add_handler(CommandHandler('tx', total_count))
 updater.dispatcher.add_handler(CommandHandler('sethook', sethook))
 updater.dispatcher.add_handler(CommandHandler('delhook', delhook))
 updater.dispatcher.add_handler(CommandHandler('activity', activity))
