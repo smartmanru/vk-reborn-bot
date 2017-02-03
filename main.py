@@ -468,7 +468,7 @@ def like(bot, update, cmd=None):
         keen.add_event("not_enough_global_likes", {"by_user": update.message.from_user.id})
         return
     else:
-        arvs = [owner, update.message.chat.id, name, count, update.message.from_user.id, update.message.id]
+        arvs = [owner, update.message.chat.id, name, count, update.message.from_user.id, update.message.message_id]
         Thread(target=like_post, args=arvs).start()
         update.message.reply_text(emojize('Ок, выполняю :sparkling_heart:', use_aliases=True))
         utils.dbadd('activity', '❤️️ ' + name + ' - ' + str(owner))
