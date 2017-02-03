@@ -11,6 +11,9 @@ r = redis.from_url(os.environ.get("REDIS_URL"), charset="utf-8", decode_response
 # reserved redis keys:
 # 'send', 'like', 'hook'
 # 'activity'
+# 'l{some number} like l5239812343'
+# 'll'
+# 'limit'
 #
 # and any numbers
 
@@ -25,6 +28,7 @@ cmd_list = '''
 /i <id> - получить информацию о пользователе
 /d <id> - история сообщений
 /l <id> - залайкать стену
+/x - посмотреть, сколько осталось лайков
 /a <id> - добавить в друзья
 /sethook <id> - пересылать сообщения в этот чат
 /delhook <id> - перестать пересылать сообщения
@@ -34,7 +38,6 @@ cmd_list = '''
 bot_name = os.environ.get('BOT_USERNAME')
 cmd_arg_1 = []
 for command in ['/sethook', '/delhook', '/i', '/we', '/d', '/l', '/a']:
-    cmd_arg_1.append(command)
     cmd_arg_1.append(command + bot_name)
 
 num = {
@@ -69,7 +72,7 @@ def drop():
 
 
 def dbadd(key, value):
-    data = dbget(str(key))
+    data = dbget(str(key))  # list
     if data is not None:
         if str(value) in data:
             if key == 'activity':
@@ -91,8 +94,7 @@ def dbadd(key, value):
                 r.set(key, json.dumps(data))
                 return
     else:
-        data = [str(value)]
-        r.set(key, json.dumps(data))
+        r.set(key, json.dumps([str(value)]))
         return
 
 
@@ -110,11 +112,46 @@ def dbdel(key, element):
     data = dbget(str(key))
     if data is None:
         return None
-    new = data.remove(str(element))
-    if not new:
+    data.remove(str(element))
+    if not data:
         r.delete(str(key))
     else:
-        r.set(key, json.dumps(new))
+        r.set(key, json.dumps(data))
+
+
+def db_like(user_id, count: int = 0) -> int or None:
+    """
+    Returns current count
+    """
+    u = 'l' + str(user_id)
+    if count != 0:
+        data = r.get(u)
+        if data is not None:
+            r.set(u, str(int(data) + count))
+        else:
+            r.set(u, str(50 + count))
+            dbadd('ll', str(user_id))
+    ret = r.get(u)
+    if ret is not None:
+        return int(ret)
+    else:
+        return None
+
+
+def limits(count: int = 0):
+    if count != 0:
+        data = r.get('limit')
+        if data is not None:
+            r.set('limit', str(int(data) + count))
+        else:
+            r.set('limit', '500')
+            return 500 + count
+    ret = r.get('limit')
+    if ret is not None:
+        return int(ret)
+    else:
+        r.set('limit', '500')
+        return 500
 
 
 def dbdropkey(key):

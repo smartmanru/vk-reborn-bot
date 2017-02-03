@@ -22,14 +22,13 @@ token = os.environ.get('TOKEN')
 app_name = os.environ.get('APPNAME')
 app_id = os.environ.get('VK_APP_ID')
 login = os.environ.get('VK_LOGIN')
-phone_number = '+' + str(login)
+phone_number = '+' + login
 password = os.environ.get('VK_PASS')
 scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
          'messages', 'wall', 'notifications', 'offline', 'groups', 'docs']
 
 
 def check_unread():
-    sleep(2)
     dialogs = api.messages.getDialogs(count=200, unread=True)
     if dialogs['count'] > 0:
         msg_ids = []
@@ -73,22 +72,48 @@ def check_unread():
             tg.send_message(admin, ete)
 
 
-def like_post(wall, chat_id, name, count):
-    success = 0
-    error = 0
-    for i in wall:
+def get_wall(owner, count, offset=0):
+    try:
+        wall_request = api.wall.get(owner_id=owner, count=count, offset=offset)
+        return wall_request
+    except exceptions.VkException as e:
+        print('Error while getting posts ' + str(e))
+        return None
+
+
+def another_like_function(items, success, error):
+    already = 0
+    for i in items:
+        if i['likes']['can_like'] == 0:
+            already += 1
+            continue
         try:
             a = api.likes.add(type='post', owner_id=i['owner_id'], item_id=i['id'])
             if 'likes' in a:
                 success += 1
         except exceptions.VkException:
             error += 1
-        sleep(5)
-    t = emojize('<b>{}</b> &lt; :revolving_hearts:\n:heart: {}/{}\n:broken_heart: {}/{}'.format(escapize(name),
-                                                                                                str(success),
-                                                                                                str(count),
-                                                                                                str(error),
-                                                                                                str(count)),
+        sleep(3)
+    return success, error, already
+
+
+def like_post(owner, chat_id, name, count):
+    already_liked = 0
+    wall = get_wall(owner, count)
+    total = wall['count']
+    success, error, already = another_like_function(wall['items'], 0, 0)
+    already_liked += already
+    while already != 0:
+        wall = get_wall(owner, count, already)
+        success, error, already = another_like_function(wall['items'], 0, 0)
+        already_liked += already
+        print(str(already), str(already_liked), str(success), str(error))
+        sleep(1)
+    utils.limits(0 - success)
+    t = emojize('<b>{}</b> &lt; {}:revolving_hearts:\n:heart: {}/{}\n:broken_heart: {}'.format(escapize(name), str(success),
+                                                                                                str(success + already_liked),
+                                                                                                str(total),
+                                                                                                str(error)),
                 use_aliases=True)
     keen.add_event("likes", {"success": success, "error": error})
     tg.send_message(log_channel, t, 'HTML', True)
@@ -267,11 +292,9 @@ def secrets(bot, update, cmd=None):
             query = cmd[0].split('.')
             if query[1] == 'add':
                 utils.dbadd(query[2], str(update.message.reply_to_message.from_user.id))
-                update.message.reply_text(emojize('Замурчательно :smile_cat:', use_aliases=True))
                 tg.send_message(admin, str(utils.dbget(query[2])))
             elif query[1] == 'del':
                 utils.dbdel(query[2], str(update.message.reply_to_message.from_user.id))
-                update.message.reply_text(emojize('Мяу :smirk_cat:', use_aliases=True))
                 tg.send_message(admin, str(utils.dbget(query[2])))
         except Exception as e:
             tg.send_message(admin, secrets_help + '\n' + str(e))
@@ -371,6 +394,11 @@ def activity(bot, update):
     update.message.reply_text(t)
 
 
+def counts(bot, update):
+    x = utils.db_like(update.message.from_user.id)
+    update.message.reply_text(emojize('Вы можете поставить ещё ' + str(x) + ' сердечек!', use_aliases=True))
+
+
 @parse_request
 def friend(bot, update, cmd=None):
     if cmd:
@@ -397,7 +425,6 @@ def like(bot, update, cmd=None):
         if str(update.message.from_user.id) in blacklist:
             update.message.reply_text(emojize(choice(blacklist_strings), use_aliases=True))
             return
-    count = 10  # TODO
     if not cmd:
         return
     try:
@@ -408,10 +435,20 @@ def like(bot, update, cmd=None):
         group = api.groups.getById(group_id=cmd[0])[0]
         owner = 0 - group['id']
         name = group['name']
-    wall = api.wall.get(owner_id=owner, count=count)['items']
-    Thread(target=like_post, args=[wall, update.message.chat.id, name, count]).start()
-    update.message.reply_text(emojize('Ок, выполняю :sparkling_heart:', use_aliases=True))
-    utils.dbadd('activity', '❤️️ ' + name + ' - ' + str(owner))
+    available = utils.db_like(update.message.from_user.id)
+    count = 10 if available >= 10 else available
+    if count <= 0:
+        update.message.reply_text(emojize('У вас не осталось сердечек :disappointed:', use_aliases=True))
+        keen.add_event("not_enough_user_likes", {"by_user": update.message.from_user.id})
+        return
+    elif utils.limits() <= count:
+        update.message.reply_text(emojize('Исчерапан дневной лимит бота :disappointed:', use_aliases=True))
+        keen.add_event("not_enough_global_likes", {"by_user": update.message.from_user.id})
+        return
+    else:
+        Thread(target=like_post, args=[owner, update.message.chat.id, name, count]).start()
+        update.message.reply_text(emojize('Ок, выполняю :sparkling_heart:', use_aliases=True))
+        utils.dbadd('activity', '❤️️ ' + name + ' - ' + str(owner))
 
 
 def send_photo(bot, update):
@@ -427,6 +464,7 @@ api = vk_requests.create_api(app_id=app_id, login=login,
                              password=password, phone_number=phone_number,
                              api_version='5.62', scope=scope)
 
+sleep(1)
 Thread(target=check_unread, args=[]).start()
 Thread(target=online, args=[]).start()
 
@@ -444,6 +482,7 @@ updater.dispatcher.add_handler(CommandHandler('i', info))
 updater.dispatcher.add_handler(CommandHandler('d', history))
 updater.dispatcher.add_handler(CommandHandler('l', like))
 updater.dispatcher.add_handler(CommandHandler('a', friend))
+updater.dispatcher.add_handler(CommandHandler('x', counts))
 updater.dispatcher.add_handler(CommandHandler('sethook', sethook))
 updater.dispatcher.add_handler(CommandHandler('delhook', delhook))
 updater.dispatcher.add_handler(CommandHandler('activity', activity))

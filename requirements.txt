@@ -4,3 +4,4 @@ requests
 vk_requests
 redis
 keen
+APScheduler==3.0.0
