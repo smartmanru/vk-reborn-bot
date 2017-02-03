@@ -104,7 +104,7 @@ def like_post(owner, chat_id, name, count):
     success, error, already = another_like_function(wall['items'], 0, 0)
     already_liked += already
     while already != 0:
-        wall = get_wall(owner, count, already)
+        wall = get_wall(owner, count, already_liked)
         success, error, already = another_like_function(wall['items'], 0, 0)
         already_liked += already
         print(str(already), str(already_liked), str(success), str(error))
