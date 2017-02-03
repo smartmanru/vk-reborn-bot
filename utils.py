@@ -38,6 +38,7 @@ cmd_list = '''
 bot_name = os.environ.get('BOT_USERNAME')
 cmd_arg_1 = []
 for command in ['/sethook', '/delhook', '/i', '/we', '/d', '/l', '/a']:
+    cmd_arg_1.append(command)
     cmd_arg_1.append(command + bot_name)
 
 num = {
@@ -119,7 +120,7 @@ def dbdel(key, element):
         r.set(key, json.dumps(data))
 
 
-def db_like(user_id, count: int = 0) -> int or None:
+def db_like(user_id, count: int = 0) -> int:
     """
     Returns current count
     """
@@ -135,7 +136,9 @@ def db_like(user_id, count: int = 0) -> int or None:
     if ret is not None:
         return int(ret)
     else:
-        return None
+        r.set(u, str(50 + count))
+        dbadd('ll', str(user_id))
+        return 50
 
 
 def limits(count: int = 0):
