@@ -99,6 +99,7 @@ def another_like_function(items, success, error):
 
 def like_post(owner, chat_id, name, count):
     already_liked = 0
+    total_success = 0
     wall = get_wall(owner, count)
     total = wall['count']
     success, error, already = another_like_function(wall['items'], 0, 0)
@@ -107,8 +108,11 @@ def like_post(owner, chat_id, name, count):
         wall = get_wall(owner, count, already_liked)
         success, error, already = another_like_function(wall['items'], 0, 0)
         already_liked += already
+        total_success += success
         print(str(already), str(already_liked), str(success), str(error))
         sleep(1)
+        if total_success >= count:
+            break
     utils.limits(0 - success)
     t = emojize('<b>{}</b> &lt; {}:revolving_hearts:\n:heart: {}/{}\n:broken_heart: {}'.format(escapize(name), str(success),
                                                                                                 str(success + already_liked),
