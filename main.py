@@ -81,8 +81,11 @@ def get_wall(owner, count, offset=0):
         return None
 
 
-def another_like_function(items, success, error):
+def another_like_function(items, success, error, who):
     already = 0
+    available = utils.db_like(who)
+    if available <= 0:
+        return success, error, already, True
     for i in items:
         if i['likes']['can_like'] == 0:
             already += 1
@@ -91,6 +94,8 @@ def another_like_function(items, success, error):
             a = api.likes.add(type='post', owner_id=i['owner_id'], item_id=i['id'])
             if 'likes' in a:
                 success += 1
+                utils.limits(0 - 1)
+                utils.db_like(who, 0 - 1)
         except exceptions.VkException as e:
             print('Error while another_like_function')
             print(str(success), str(error))
@@ -98,7 +103,7 @@ def another_like_function(items, success, error):
             error += 1
             sleep(4)
         sleep(3)
-    return success, error, already
+    return success, error, already, False
 
 
 def like_post(owner, chat_id, name, count, who, msg_id):
@@ -108,30 +113,31 @@ def like_post(owner, chat_id, name, count, who, msg_id):
         tg.send_message(chat_id=chat_id, text='Не удалось получить ни одного поста', reply_to_message_id=msg_id)
         return
     total = wall['count']
-    success, error, already = another_like_function(wall['items'], 0, 0)
+    success, error, already, stop = another_like_function(wall['items'], 0, 0, who)
     already_liked += already
-    while already != 0:
-        wall = get_wall(owner, count, already_liked)
-        if wall is None:
-            tg.send_message(chat_id=chat_id, text='Не удалось получить посты', reply_to_message_id=msg_id)
-            break
-        success, error, already = another_like_function(wall['items'], success, error)
-        already_liked += already
-        print('already: ' + str(already),
-              '\nalready_liked: ' + str(already_liked),
-              '\nsuccess: ' + str(success),
-              '\nerror: ' + str(error))
-        sleep(1)
-        if success >= count:
-            break
-    utils.limits(0 - success)
+    if not stop:
+        while already != 0:
+            wall = get_wall(owner, count, already_liked)
+            if wall is None:
+                tg.send_message(chat_id=chat_id, text='Не удалось получить посты', reply_to_message_id=msg_id)
+                break
+            success, error, already, stop = another_like_function(wall['items'], success, error, who)
+            if stop:
+                break
+            already_liked += already
+            print('already: ' + str(already),
+                  '\nalready_liked: ' + str(already_liked),
+                  '\nsuccess: ' + str(success),
+                  '\nerror: ' + str(error))
+            sleep(1)
+            if success >= count:
+                break
     t = emojize('<b>{}</b> &lt; {}:revolving_hearts:\n:heart: {}/{}\n:broken_heart: {}'.format(escapize(name), str(success),
                                                                                                 str(success + already_liked),
                                                                                                 str(total),
                                                                                                 str(error)),
                 use_aliases=True)
     keen.add_event("likes", {"success": success, "error": error})
-    utils.db_like(who, 0 - success)
     tg.send_message(log_channel, t, 'HTML', True)
     tg.send_message(chat_id, t, 'HTML', True)
 
