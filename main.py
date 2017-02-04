@@ -317,12 +317,15 @@ def secrets(bot, update, cmd=None):
     if not cmd:
         tg.send_message(admin, secrets_help)
         return
-    if cmd[0].startswith('lyk'):
+    if cmd[0].startswith('rese'):
+        utils.reset()
+        print('Reset by admin')
+    elif cmd[0].startswith('lyk'):
         try:
             utils.db_like(str(update.message.reply_to_message.from_user.id), int(cmd[0].split('.')[1]))
         except Exception as e:
             tg.send_message(admin, secrets_help + '\n' + str(e))
-    if cmd[0].startswith('drop'):
+    elif cmd[0].startswith('drop'):
         k = cmd[0].split('.')[1]
         utils.dbdropkey(k)
         update.message.reply_text(k + ' droped')

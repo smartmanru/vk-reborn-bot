@@ -1,6 +1,7 @@
 import os
 import redis
 import json
+from datetime import datetime, timedelta
 
 r = redis.from_url(os.environ.get("REDIS_URL"), charset="utf-8", decode_responses=True)
 
@@ -14,6 +15,7 @@ r = redis.from_url(os.environ.get("REDIS_URL"), charset="utf-8", decode_response
 # 'l{some number} like l5239812343'
 # 'll'
 # 'limit'
+# 'last_reset'
 #
 # and any numbers
 
@@ -34,6 +36,10 @@ cmd_list = '''
 /delhook <id> - перестать пересылать сообщения
 /activity - список последних действий
 '''
+
+init_time = r.get('last_reset')
+if init_time is None:
+    r.set('last_reset', str(datetime.utcnow().timestamp()))
 
 bot_name = os.environ.get('BOT_USERNAME')
 cmd_arg_1 = []
@@ -124,6 +130,9 @@ def db_like(user_id, count: int = 0) -> int:
     """
     Returns current count
     """
+
+    if (datetime.utcnow() - datetime.fromtimestamp(float(r.get('last_reset')))) > timedelta(1):
+        reset()
     u = 'l' + str(user_id)
     if count != 0:
         data = r.get(u)
@@ -142,6 +151,8 @@ def db_like(user_id, count: int = 0) -> int:
 
 
 def limits(count: int = 0):
+    if (datetime.utcnow() - datetime.fromtimestamp(float(r.get('last_reset')))) > timedelta(1):
+        reset()
     if count != 0:
         data = r.get('limit')
         if data is not None:
@@ -188,3 +199,15 @@ def parser(text, spaces):
         return args[1:]
     else:
         return False
+
+
+def reset():
+    r.set('limit', '500')
+    data = r.get('ll')
+    if data is not None:
+        data = json.loads(data)
+        for i in data:
+            r.set('l' + str(i), str(50))
+    now = str(datetime.utcnow().timestamp())
+    r.set('last_reset', now)
+    print(now)
