@@ -14,7 +14,6 @@ import requests
 import keen
 
 import utils
-from utils import parse_request, escapize, secrets_help, blacklist_strings
 from longpoll import LongPoll
 
 admin = int(os.environ.get('ADMIN_ID'))
@@ -47,7 +46,7 @@ def check_unread():
             msg_ids.append(i['message']['id'])
             try:
                 user = api.users.get(user_ids=user_id)[0]
-                full_name = escapize(user['first_name'] + ' ' + user['last_name'])
+                full_name = utils.escapize(user['first_name'] + ' ' + user['last_name'])
                 response += full_name + ' ' + str(user_id) + '\n'
             except exceptions.VkException:
                 pass
@@ -58,8 +57,8 @@ def check_unread():
                     for t in targets:
                         u = api.users.get(user_ids=user_id, name_case='gen')[0]
                         u_nom = api.users.get(user_ids=user_id)[0]
-                        full_name = escapize(u['first_name'] + ' ' + u['last_name'])
-                        full_name_nom = escapize(u_nom['first_name'] + ' ' + u_nom['last_name'])
+                        full_name = utils.escapize(u['first_name'] + ' ' + u['last_name'])
+                        full_name_nom = utils.escapize(u_nom['first_name'] + ' ' + u_nom['last_name'])
                         sud = str(u_nom['id'])
                         utils.dbadd('activity', '✉️ ' + full_name_nom + ' - ' + sud)
                         text = 'Есть новые сообщения от <b>' + full_name + '.</b> Id: ' + sud + '\nВведите <code>/d ' + sud + '</code> чтобы получить историю сообщений'
@@ -141,7 +140,7 @@ def like_post(args):
             sleep(1)
             if success >= count:
                 break
-    t = emojize('<b>{}</b> &lt; {}:revolving_hearts:\n:heart: {}/{}\n:broken_heart: {}'.format(escapize(name), str(success),
+    t = emojize('<b>{}</b> &lt; {}:revolving_hearts:\n:heart: {}/{}\n:broken_heart: {}'.format(utils.escapize(name), str(success),
                                                                                                 str(success + already_liked),
                                                                                                 str(total),
                                                                                                 str(error)),
@@ -154,12 +153,12 @@ def like_post(args):
 # noinspection PyTypeChecker
 def poll_callback(target, user_id, text, attachments):
     u = api.users.get(user_ids=user_id)[0]
-    full_name = escapize(u['first_name'] + ' ' + u['last_name'])
+    full_name = utils.escapize(u['first_name'] + ' ' + u['last_name'])
     utils.dbadd('activity', '✉️ ' + full_name + ' - ' + str(u['id']))
     if not attachments:
         try:
             tg.sendMessage(chat_id=target, text='<b>' + u['first_name'] + ' ' + u['last_name'] + ' &gt;&gt;&gt;</b>\n' +
-                                                escapize(text), parse_mode='HTML', disable_web_page_preview=True)
+                                                utils.escapize(text), parse_mode='HTML', disable_web_page_preview=True)
         except Exception as e:
             tg.send_message(admin,
                             'Exception:\n' + str(e) + '\nIn poll_callback while sending to target - ' + str(target))
@@ -271,15 +270,15 @@ def start(bot, update):
 
 
 def hello(bot, update):
-    update.message.reply_text(emojize(utils.help_text + escapize(utils.cmd_list), use_aliases=True), parse_mode='HTML')
+    update.message.reply_text(emojize(utils.help_text + utils.escapize(utils.cmd_list), use_aliases=True), parse_mode='HTML')
 
 
-@parse_request
+@utils.parse_request
 def send(bot, update, cmd=None):
     blacklist = utils.dbget('send')
     if blacklist is not None:
         if str(update.message.from_user.id) in blacklist:
-            update.message.reply_text(emojize(choice(blacklist_strings), use_aliases=True))
+            update.message.reply_text(emojize(choice(utils.blacklist_strings), use_aliases=True))
             return
     if cmd:
         data = ''
@@ -299,8 +298,8 @@ def send(bot, update, cmd=None):
             data = emojize('Что-то пошло не так :confused:', use_aliases=True)  # if not enough args
         finally:
             if isinstance(data, int):
-                full_name = escapize(user['first_name'] + ' ' + user['last_name'])
-                t = '<b>' + full_name + ' &lt;&lt;&lt;</b>\n' + escapize(cmd[1])
+                full_name = utils.escapize(user['first_name'] + ' ' + user['last_name'])
+                t = '<b>' + full_name + ' &lt;&lt;&lt;</b>\n' + utils.escapize(cmd[1])
                 update.message.reply_text(t, parse_mode='HTML', disable_web_page_preview=True)
                 tg.send_message(log_channel, t, 'HTML', True)
                 utils.dbadd('activity', '✉️ ' + full_name + ' - ' + str(user['id']))
@@ -310,12 +309,12 @@ def send(bot, update, cmd=None):
 
 
 # noinspection PyTypeChecker
-@parse_request
+@utils.parse_request
 def secrets(bot, update, cmd=None):
     if update.message.from_user.id != admin:
         return
     if not cmd:
-        tg.send_message(admin, secrets_help)
+        tg.send_message(admin, utils.secrets_help)
         return
     if cmd[0].startswith('rese'):
         utils.reset()
@@ -324,7 +323,7 @@ def secrets(bot, update, cmd=None):
         try:
             utils.db_like(str(update.message.reply_to_message.from_user.id), int(cmd[0].split('.')[1]))
         except Exception as e:
-            tg.send_message(admin, secrets_help + '\n' + str(e))
+            tg.send_message(admin, utils.secrets_help + '\n' + str(e))
     elif cmd[0].startswith('drop'):
         k = cmd[0].split('.')[1]
         utils.dbdropkey(k)
@@ -339,10 +338,10 @@ def secrets(bot, update, cmd=None):
                 utils.dbdel(query[2], str(update.message.reply_to_message.from_user.id))
                 tg.send_message(admin, str(utils.dbget(query[2])))
         except Exception as e:
-            tg.send_message(admin, secrets_help + '\n' + str(e))
+            tg.send_message(admin, utils.secrets_help + '\n' + str(e))
 
 
-@parse_request
+@utils.parse_request
 def info(bot, update, cmd=None):
     if cmd:
         try:
@@ -381,14 +380,14 @@ def info(bot, update, cmd=None):
         os.remove(file_name)
 
 
-@parse_request
+@utils.parse_request
 def sethook(bot, update, cmd=None):
     if not cmd:
         return
     blacklist = utils.dbget('hook')
     if blacklist is not None:
         if str(update.message.from_user.id) in blacklist:
-            update.message.reply_text(emojize(choice(blacklist_strings), use_aliases=True))
+            update.message.reply_text(emojize(choice(utils.blacklist_strings), use_aliases=True))
             return
     try:
         hook_vk_user = api.users.get(user_ids=cmd[0])[0]['id']
@@ -401,14 +400,14 @@ def sethook(bot, update, cmd=None):
     keen.add_event("set_hook", {"by_user": update.message.from_user.id, "req_user": cmd[0]})
 
 
-@parse_request
+@utils.parse_request
 def delhook(bot, update, cmd=None):
     if not cmd:
         return
     blacklist = utils.dbget('hook')
     if blacklist is not None:
         if str(update.message.from_user.id) in blacklist:
-            update.message.reply_text(emojize(choice(blacklist_strings), use_aliases=True))
+            update.message.reply_text(emojize(choice(utils.blacklist_strings), use_aliases=True))
             return
 
     try:
@@ -422,7 +421,7 @@ def delhook(bot, update, cmd=None):
     keen.add_event("del_hook", {"by_user": update.message.from_user.id, "req_user": cmd[0]})
 
 
-@parse_request
+@utils.parse_request
 def history(bot, update, cmd=None):
     if not cmd:
         return
@@ -448,7 +447,7 @@ def total_count(bot, update):
     update.message.reply_text(str(x))
 
 
-@parse_request
+@utils.parse_request
 def friend(bot, update, cmd=None):
     if cmd:
         try:
@@ -467,13 +466,13 @@ def friend(bot, update, cmd=None):
         keen.add_event("friend", {"by_user": update.message.from_user.id, "req_user": cmd[0]})
 
 
-@parse_request
+@utils.parse_request
 def like(bot, update, cmd=None):
     print('Call like(): ' + str(update.message.text))
     blacklist = utils.dbget('like')
     if blacklist is not None:
         if str(update.message.from_user.id) in blacklist:
-            update.message.reply_text(emojize(choice(blacklist_strings), use_aliases=True))
+            update.message.reply_text(emojize(choice(utils.blacklist_strings), use_aliases=True))
             return
     if not cmd:
         return
