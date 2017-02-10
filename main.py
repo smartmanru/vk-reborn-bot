@@ -4,7 +4,7 @@ from threading import Thread
 from queue import Queue
 from pprint import pprint
 from random import choice
-from functools import wraps
+from functools import wraps, lru_cache
 
 from telegram import Bot
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
@@ -28,6 +28,15 @@ phone_number = '+' + login
 password = os.environ.get('VK_PASS')
 scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
          'messages', 'wall', 'notifications', 'offline', 'groups', 'docs']
+
+
+@lru_cache()
+def get_user(user_id, name_case='nom'):
+    try:
+        user = api.users.get(user_ids=user_id, name_case=name_case)[0]
+        return dict(user)
+    except exceptions.VkException as exception:
+        return str(exception)
 
 
 def restricted(func):
@@ -178,7 +187,7 @@ def like_post(args):
 
 # noinspection PyTypeChecker
 def poll_callback(target, user_id, text, attachments):
-    u = api.users.get(user_ids=user_id)[0]
+    u = get_user(user_id)
     full_name = utils.escapize(u['first_name'] + ' ' + u['last_name'])
     utils.dbadd('activity', '✉️ ' + full_name + ' - ' + str(u['id']))
     if not attachments:
@@ -306,32 +315,26 @@ def send(bot, update, cmd=None):
         if str(update.message.from_user.id) in blacklist:
             update.message.reply_text(emojize(choice(utils.blacklist_strings), use_aliases=True))
             return
-    if cmd:
-        data = ''
-        try:
-            user = api.users.get(user_ids=cmd[0])[0]
-        except exceptions.VkException as exception:
-            update.message.reply_text(str(exception))
-            return
-        except IndexError:
-            update.message.reply_text('Пошёл на хуй')
-            return
-        try:
-            data = api.messages.send(peer_id=user['id'], message=cmd[1])
-        except exceptions.VkException as exception:
-            data = str(exception)
-        except TypeError:
-            data = emojize('Что-то пошло не так :confused:', use_aliases=True)  # if not enough args
-        finally:
-            if isinstance(data, int):
-                full_name = utils.escapize(user['first_name'] + ' ' + user['last_name'])
-                t = '<b>' + full_name + ' &lt;&lt;&lt;</b>\n' + utils.escapize(cmd[1])
-                update.message.reply_text(t, parse_mode='HTML', disable_web_page_preview=True)
-                tg.send_message(log_channel, t, 'HTML', True)
-                utils.dbadd('activity', '✉️ ' + full_name + ' - ' + str(user['id']))
-                keen.add_event("sended", {"by_user": update.message.from_user.id, "to_user": user['id']})
-            else:
-                update.message.reply_text(str(data))
+    if not cmd:
+        return
+    data = ''
+    user = get_user(cmd[0])
+    try:
+        data = api.messages.send(peer_id=user['id'], message=cmd[1])
+    except exceptions.VkException as exception:
+        data = str(exception)
+    except TypeError:
+        data = emojize('Что-то пошло не так :confused:', use_aliases=True)  # if not enough args
+    finally:
+        if isinstance(data, int):
+            full_name = utils.escapize(user['first_name'] + ' ' + user['last_name'])
+            t = '<b>' + full_name + ' &lt;&lt;&lt;</b>\n' + utils.escapize(cmd[1])
+            update.message.reply_text(t, parse_mode='HTML', disable_web_page_preview=True)
+            tg.send_message(log_channel, t, 'HTML', True)
+            utils.dbadd('activity', '✉️ ' + full_name + ' - ' + str(user['id']))
+            keen.add_event("sended", {"by_user": update.message.from_user.id, "to_user": user['id']})
+        else:
+            update.message.reply_text(str(data))
 
 
 # noinspection PyTypeChecker,PyUnreachableCode
@@ -448,9 +451,39 @@ def delhook(bot, update, cmd=None):
     keen.add_event("del_hook", {"by_user": update.message.from_user.id, "req_user": cmd[0]})
 
 
+def history_text(user_id, page: int) -> str:
+    message_list = []
+    history_response = api.messages.getHistory(user_id=user_id, offset=page*20)['items']
+    for i in history_response:
+        if i['out'] == 0:
+            message_list.append({'>>> ': i['body']})
+        else:
+            message_list.append({'<<< ': i['body']})
+    user = get_user(user_id, 'ins')
+    if isinstance(user, str):
+        raise Exception(user)
+    text_form = 'Сообщения с <b>' + user['first_name'] + '</b>\n'
+    for item in message_list:
+        for k, v in item.items():
+            text_form = text_form + '\n' + k + utils.escapize(v)
+    user = get_user(user)
+    if isinstance(user, str):
+        raise Exception(user)
+    nom_name = user['first_name'] + ' ' + user['last_name']
+    utils.dbadd('activity', '📃️ ' + nom_name + ' - ' + str(user['id']))
+    keen.add_event("history", {"to_user": user['id']})
+    return text_form
+
+
 @parse_request
 def history(bot, update, cmd=None):
     if not cmd:
+        return
+    try:
+        msg = history_text(cmd[0], 0)
+        update.message.reply_text(msg, parse_mode = 'HTML')
+    except Exception as e:
+        update.message.reply_text(e)
         return
 
 
