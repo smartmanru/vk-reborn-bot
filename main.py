@@ -34,7 +34,7 @@ scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
 def get_user(user_id, name_case='nom'):
     try:
         user = api.users.get(user_ids=user_id, name_case=name_case)[0]
-        return user
+        return dict(user)
     except exceptions.VkException as exception:
         return str(exception)
 
@@ -452,16 +452,19 @@ def delhook(bot, update, cmd=None):
 
 
 def history_text(user_id, page: int) -> str:
+    user = get_user(user_id, 'ins')
+    if isinstance(user, str):
+        raise Exception(user)
     message_list = []
-    history_response = api.messages.getHistory(user_id=user_id, offset=page*20)['items']
+    try:
+        history_response = api.messages.getHistory(user_id=user['id'], offset=page*20)['items']
+    except exceptions.VkException as e:
+        raise e
     for i in history_response:
         if i['out'] == 0:
             message_list.append({'>>> ': i['body']})
         else:
             message_list.append({'<<< ': i['body']})
-    user = get_user(user_id, 'ins')
-    if isinstance(user, str):
-        raise Exception(user)
     text_form = 'Сообщения с <b>' + user['first_name'] + '</b>\n'
     for item in message_list:
         for k, v in item.items():
