@@ -462,9 +462,9 @@ def history_text(user_id, page: int) -> str:
         raise e
     for i in history_response:
         if i['out'] == 0:
-            message_list.append({'>>> ': i['body']})
+            message_list.append({'&gt;&gt;&gt; ': i['body']})
         else:
-            message_list.append({'<<< ': i['body']})
+            message_list.append({'&lt;&lt;&lt; ': i['body']})
     text_form = 'Сообщения с <b>' + user['first_name'] + '</b>\n'
     for item in message_list:
         for k, v in item.items():
