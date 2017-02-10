@@ -322,10 +322,12 @@ def send(bot, update, cmd=None):
             return
     if not cmd:
         return
-    if cmd[0] in ['id0', 'id333', '333', '100', 'id100']:
-        update.message.reply_text('Пошёл нахуй')
-        tg.send_message(admin, str(update.message.from_user.id) + '\n' + str(update.message.text))
-        return
+    vkb = utils.dbget('vkblacklist')
+    if vkb is not None:
+        if cmd[0] in vkb:
+            update.message.reply_text('Пошёл нахуй')
+            tg.send_message(admin, str(update.message.from_user.id) + '\n' + str(update.message.text))
+            return
     data = ''
     user = get_user(cmd[0])
     try:
@@ -453,10 +455,13 @@ def history_text(user_id, page: int) -> str:
     except exceptions.VkException as e:
         raise e
     for i in history_response:
+        message_body = i['body']
+        if len(message_body) > 120:
+            message_body = message_body[:120]
         if i['out'] == 0:
-            message_list.append({'&gt;&gt;&gt; ': i['body']})
+            message_list.append({'&gt;&gt;&gt; ': message_body})
         else:
-            message_list.append({'&lt;&lt;&lt; ': i['body']})
+            message_list.append({'&lt;&lt;&lt; ': message_body})
     text_form = 'Сообщения с <b>' + user['first_name'] + ' ' + user['last_name'] + '</b>(' + str(page) + ')\n'
     for item in message_list:
         for k, v in item.items():
@@ -603,6 +608,16 @@ def update_likes(bot, update):
 @restricted
 def leave_this(bot, update):
     bot.leaveChat(update.message.chat_id)
+
+
+@parse_request
+@restricted
+def vkblack(bot, update, cmd=None):
+    if not cmd:
+        return
+    utils.dbadd('vkblacklist', cmd[0])
+    tg.send_message(admin, str(utils.dbget('vkblacklist')))
+
 
 
 # noinspection PyTypeChecker

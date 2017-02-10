@@ -10,8 +10,8 @@ r = redis.from_url(os.environ.get("REDIS_URL"), charset="utf-8", decode_response
 # 'string key': ['list', 'with', 'strings']
 
 # reserved redis keys:
-# 'send', 'like', 'hook'
-# 'activity'
+# 'send', 'like', 'hook', 'button', 'history'
+# 'activity', 'vkblacklist'
 # 'l{some number} like l5239812343'
 # 'll'
 # 'limit'
@@ -38,7 +38,8 @@ cmd_list = '''
 
 cmd_admin = '''
 /update_likes
-/blacklist add|del send|like|hook|history|button'''
+/blacklist add|del send|like|hook|history|button
+/vkb id/username'''
 
 init_time = r.get('last_reset')
 if init_time is None:
@@ -46,7 +47,7 @@ if init_time is None:
 
 bot_name = os.environ.get('BOT_USERNAME')
 cmd_arg_1 = []
-for command in ('/sethook', '/delhook', '/i', '/we', '/d', '/l', '/a'):
+for command in ('/sethook', '/delhook', '/i', '/we', '/d', '/l', '/a', '/vkb'):
     cmd_arg_1.append(command)
     cmd_arg_1.append(command + bot_name)
 
