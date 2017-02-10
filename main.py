@@ -30,7 +30,7 @@ scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
          'messages', 'wall', 'notifications', 'offline', 'groups', 'docs']
 
 
-@lru_cache
+@lru_cache()
 def get_user(user_id, name_case='nom'):
     try:
         user = api.users.get(user_ids=user_id, name_case=name_case)[0]
