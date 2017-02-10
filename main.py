@@ -574,8 +574,7 @@ def button(bot, update):
         if int(page) == 0:
             keyboard.pop(0)
         reply_markup = InlineKeyboardMarkup([keyboard])
-        msg = history_text(user_id, page)
-
+        msg = history_text(user_id, int(page))
         bot.sendMessage(chat_id=query.message.chat_id, text=msg, parse_mode = 'HTML', reply_markup=reply_markup)
     except Exception as e:
         bot.sendMessage(str(e))
