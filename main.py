@@ -216,8 +216,15 @@ def parse_message(message_object, callback):
     user_id = message_object['user_id']
     text = message_object['body']
     targets = utils.dbget(user_id)
+    check_black = utils.dbget('notarget')
     if targets is None:
-        targets = [log_channel]
+        if check_black is not None:
+            if user_id not in check_black:
+                targets = [log_channel]
+            else:
+                return
+        else:
+            targets = [log_channel]
     else:
         targets.append(log_channel)
     attachments = []
@@ -326,7 +333,7 @@ def send(bot, update, cmd=None):
     vkb = utils.dbget('vkblacklist')
     if vkb is not None:
         if str(user['id']) in vkb:
-            update.message.reply_text('Пошёл нахуй')
+            update.message.reply_text('Вы не можете отправлять сообщения этому пользователю')
             tg.send_message(admin, str(update.message.from_user.id) + '\n' + str(update.message.text))
             return
     data = ''
@@ -413,14 +420,16 @@ def sethook(bot, update, cmd=None):
         if str(update.message.from_user.id) in blacklist:
             update.message.reply_text(emojize(choice(utils.blacklist_strings), use_aliases=True))
             return
-    try:
-        hook_vk_user = api.users.get(user_ids=cmd[0])[0]['id']
-    except exceptions.VkException:
+    check_black = utils.dbget('notarget')
+    hook_vk_user = get_user(cmd[0])
+    if isinstance(hook_vk_user, str):
         update.message.reply_text(emojize('Ошибка :disappointed:', use_aliases=True))
         return
-    utils.dbadd(hook_vk_user, update.message.chat.id)
-    print(str(utils.dbget(hook_vk_user)))
-    update.message.reply_text(emojize('Хорошо :ok_hand:', use_aliases=True))
+    reply_text = emojize('Хорошо :ok_hand:', use_aliases=True)
+    if str(hook_vk_user['id']) in check_black:
+        reply_text = hook_vk_user['first_name'] + ' ' + hook_vk_user['last_name'] + ' помечен как спамер!\nЕсли этот человек будет спамить вам, вы можете ввести /delhook ' + str(hook_vk_user['id']) + ' чтобы перестать получать от него сообшения'
+    utils.dbadd(hook_vk_user['id'], update.message.chat.id)
+    update.message.reply_text(reply_text)
     keen.add_event("set_hook", {"by_user": update.message.from_user.id, "req_user": cmd[0]})
 
 
@@ -619,6 +628,15 @@ def vkblack(bot, update, cmd=None):
     tg.send_message(admin, str(utils.dbget('vkblacklist')))
 
 
+@parse_request
+@restricted
+def fromvkblack(bot, update, cmd=None):
+    if not cmd:
+        return
+    utils.dbadd('notarget', str(get_user(cmd[0])['id']))
+    tg.send_message(admin, str(utils.dbget('notarget')))
+
+
 # noinspection PyTypeChecker
 @restricted
 @parse_request
@@ -682,6 +700,7 @@ updater.dispatcher.add_handler(CommandHandler('blacklist', blacklist_control))
 updater.dispatcher.add_handler(CommandHandler('helpme', hello_admin))
 updater.dispatcher.add_handler(CommandHandler('leave', leave_this))
 updater.dispatcher.add_handler(CommandHandler('vkb', vkblack))
+updater.dispatcher.add_handler(CommandHandler('fvkb', fromvkblack))
 updater.dispatcher.add_handler(MessageHandler(Filters.photo, send_photo))
 updater.dispatcher.add_handler(MessageHandler(Filters.all, anything))
 updater.idle()

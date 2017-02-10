@@ -11,7 +11,7 @@ r = redis.from_url(os.environ.get("REDIS_URL"), charset="utf-8", decode_response
 
 # reserved redis keys:
 # 'send', 'like', 'hook', 'button', 'history'
-# 'activity', 'vkblacklist'
+# 'activity', 'vkblacklist', 'notarget'
 # 'l{some number} like l5239812343'
 # 'll'
 # 'limit'
@@ -38,8 +38,9 @@ cmd_list = '''
 
 cmd_admin = '''
 /update_likes
-/blacklist add|del send|like|hook|history|button
-/vkb id/username'''
+/blacklist add|del send|like|hook|history|button (reply to message)
+/vkb id/username - запретить отправлять сообщения этому пользователю
+/fvkb id/username - не отправлять в лог сообщения от этого пользователя'''
 
 init_time = r.get('last_reset')
 if init_time is None:
