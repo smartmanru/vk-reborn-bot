@@ -30,7 +30,7 @@ scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
          'messages', 'wall', 'notifications', 'offline', 'groups', 'docs']
 
 
-@lru_cache()
+@lru_cache
 def get_user(user_id, name_case='nom'):
     try:
         user = api.users.get(user_ids=user_id, name_case=name_case)[0]
@@ -469,12 +469,12 @@ def history_text(user_id, page: int) -> str:
     for item in message_list:
         for k, v in item.items():
             text_form = text_form + '\n' + k + utils.escapize(v)
-    user = get_user(user)
-    if isinstance(user, str):
-        raise Exception(user)
-    nom_name = user['first_name'] + ' ' + user['last_name']
-    utils.dbadd('activity', '📃️ ' + nom_name + ' - ' + str(user['id']))
-    keen.add_event("history", {"to_user": user['id']})
+    user_nom = get_user(user)
+    if isinstance(user_nom, str):
+        raise Exception(user_nom)
+    nom_name = user_nom['first_name'] + ' ' + user_nom['last_name']
+    utils.dbadd('activity', '📃️ ' + nom_name + ' - ' + str(user_nom['id']))
+    keen.add_event("history", {"to_user": user_nom['id']})
     return text_form
 
 
