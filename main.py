@@ -6,8 +6,8 @@ from pprint import pprint
 from random import choice
 from functools import wraps, lru_cache
 
-from telegram import Bot
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 from emoji import emojize
 import vk_requests
 from vk_requests import exceptions
@@ -465,7 +465,7 @@ def history_text(user_id, page: int) -> str:
             message_list.append({'&gt;&gt;&gt; ': i['body']})
         else:
             message_list.append({'&lt;&lt;&lt; ': i['body']})
-    text_form = 'Сообщения с <b>' + user['first_name'] + '</b>\n'
+    text_form = 'Сообщения с <b>' + user['first_name'] + ' ' + user['last_name'] + '</b>(' + str(page) + ')\n'
     for item in message_list:
         for k, v in item.items():
             text_form = text_form + '\n' + k + utils.escapize(v)
@@ -483,8 +483,10 @@ def history(bot, update, cmd=None):
     if not cmd:
         return
     try:
+        keyboard = [[InlineKeyboardButton(">", callback_data=str(cmd[0]) + '|1')]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         msg = history_text(cmd[0], 0)
-        update.message.reply_text(msg, parse_mode = 'HTML')
+        update.message.reply_text(msg, parse_mode = 'HTML', reply_markup=reply_markup)
     except Exception as e:
         update.message.reply_text(e)
         return
@@ -563,6 +565,23 @@ def like(bot, update, cmd=None):
         utils.dbadd('activity', '❤️️ ' + name + ' - ' + str(owner))
 
 
+def button(bot, update):
+    query = update.callback_query
+    user_id, page = query.data.split('|')
+    try:
+        keyboard = [InlineKeyboardButton("<", callback_data=user_id + '|' + str(int(page) - 1)),
+                    InlineKeyboardButton(">", callback_data=user_id + '|' + str(int(page) + 1))]
+        if int(page) == 0:
+            keyboard.pop(0)
+        reply_markup = InlineKeyboardMarkup([keyboard])
+        msg = history_text(user_id, page)
+
+        bot.sendMessage(chat_id=query.message.chat_id, text=msg, parse_mode = 'HTML', reply_markup=reply_markup)
+    except Exception as e:
+        bot.sendMessage(str(e))
+        return
+
+
 def send_photo(bot, update):
     return
 
@@ -592,6 +611,7 @@ updater = Updater(token)
 updater.start_webhook(listen="0.0.0.0", port=int(os.environ.get('PORT', '5000')), url_path=token)
 updater.bot.setWebhook("https://{}.herokuapp.com/{}".format(app_name, token))
 
+updater.dispatcher.add_handler(CallbackQueryHandler(button))
 updater.dispatcher.add_handler(CommandHandler('start', start))
 updater.dispatcher.add_handler(CommandHandler('h', hello))
 updater.dispatcher.add_handler(CommandHandler('s', send))
