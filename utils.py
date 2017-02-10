@@ -48,7 +48,7 @@ if init_time is None:
 
 bot_name = os.environ.get('BOT_USERNAME')
 cmd_arg_1 = []
-for command in ('/sethook', '/delhook', '/i', '/we', '/d', '/l', '/a', '/vkb'):
+for command in ('/sethook', '/delhook', '/i', '/we', '/d', '/l', '/a', '/vkb', '/fvkb'):
     cmd_arg_1.append(command)
     cmd_arg_1.append(command + bot_name)
 
