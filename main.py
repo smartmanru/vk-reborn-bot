@@ -322,6 +322,10 @@ def send(bot, update, cmd=None):
             return
     if not cmd:
         return
+    if cmd[0] in ['id0', 'id333', '333', '100', 'id100']:
+        update.message.reply_text('Пошёл нахуй')
+        tg.send_message(admin, str(update.message.from_user.id) + '\n' + str(update.message.text))
+        return
     data = ''
     user = get_user(cmd[0])
     try:
@@ -596,6 +600,11 @@ def update_likes(bot, update):
     update.message.reply_text('Успешно')
 
 
+@restricted
+def leave_this(bot, update):
+    bot.leaveChat(update.message.chat_id)
+
+
 # noinspection PyTypeChecker
 @restricted
 @parse_request
@@ -617,7 +626,6 @@ def blacklist_control(bot, update, cmd=None):
     except Exception as e:
         tg.send_message(admin, str(e))
         update.message.reply_text('Nope.')
-
 
 
 tg = Bot(token)
@@ -658,6 +666,7 @@ updater.dispatcher.add_handler(CommandHandler('we', secrets))
 updater.dispatcher.add_handler(CommandHandler('update_likes', update_likes))
 updater.dispatcher.add_handler(CommandHandler('blacklist', blacklist_control))
 updater.dispatcher.add_handler(CommandHandler('helpme', hello_admin))
+updater.dispatcher.add_handler(CommandHandler('leave', leave_this))
 updater.dispatcher.add_handler(MessageHandler(Filters.photo, send_photo))
 updater.dispatcher.add_handler(MessageHandler(Filters.all, anything))
 updater.idle()
