@@ -4,6 +4,7 @@ from threading import Thread
 from queue import Queue
 from pprint import pprint
 from random import choice
+from functools import wraps
 
 from telegram import Bot
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
@@ -14,6 +15,7 @@ import requests
 import keen
 
 import utils
+from utils import parse_request
 from longpoll import LongPoll
 
 admin = int(os.environ.get('ADMIN_ID'))
@@ -26,6 +28,30 @@ phone_number = '+' + login
 password = os.environ.get('VK_PASS')
 scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
          'messages', 'wall', 'notifications', 'offline', 'groups', 'docs']
+
+
+def restricted(func):
+    @wraps(func)
+    def wrapped(bot, update, *args, **kwargs):
+        try:
+            user_id = update.message.from_user.id
+        except (NameError, AttributeError):
+            try:
+                user_id = update.inline_query.from_user.id
+            except (NameError, AttributeError):
+                try:
+                    user_id = update.chosen_inline_result.from_user.id
+                except (NameError, AttributeError):
+                    try:
+                        user_id = update.callback_query.from_user.id
+                    except (NameError, AttributeError):
+                        print("No user_id available in update.")
+                        return
+        if user_id != admin:
+            print("Unauthorized access denied for {}.".format(user_id))
+            return
+        return func(bot, update, *args, **kwargs)
+    return wrapped
 
 
 def queue_worker():
@@ -273,7 +299,7 @@ def hello(bot, update):
     update.message.reply_text(emojize(utils.help_text + utils.escapize(utils.cmd_list), use_aliases=True), parse_mode='HTML')
 
 
-@utils.parse_request
+@parse_request
 def send(bot, update, cmd=None):
     blacklist = utils.dbget('send')
     if blacklist is not None:
@@ -308,11 +334,12 @@ def send(bot, update, cmd=None):
                 update.message.reply_text(str(data))
 
 
-# noinspection PyTypeChecker
-@utils.parse_request
+# noinspection PyTypeChecker,PyUnreachableCode
+@restricted
+@parse_request
 def secrets(bot, update, cmd=None):
-    if update.message.from_user.id != admin:
-        return
+    update.message.reply_text('Nope.')
+    return
     if not cmd:
         tg.send_message(admin, utils.secrets_help)
         return
@@ -341,7 +368,7 @@ def secrets(bot, update, cmd=None):
             tg.send_message(admin, utils.secrets_help + '\n' + str(e))
 
 
-@utils.parse_request
+@parse_request
 def info(bot, update, cmd=None):
     if cmd:
         try:
@@ -380,7 +407,7 @@ def info(bot, update, cmd=None):
         os.remove(file_name)
 
 
-@utils.parse_request
+@parse_request
 def sethook(bot, update, cmd=None):
     if not cmd:
         return
@@ -400,7 +427,7 @@ def sethook(bot, update, cmd=None):
     keen.add_event("set_hook", {"by_user": update.message.from_user.id, "req_user": cmd[0]})
 
 
-@utils.parse_request
+@parse_request
 def delhook(bot, update, cmd=None):
     if not cmd:
         return
@@ -421,7 +448,7 @@ def delhook(bot, update, cmd=None):
     keen.add_event("del_hook", {"by_user": update.message.from_user.id, "req_user": cmd[0]})
 
 
-@utils.parse_request
+@parse_request
 def history(bot, update, cmd=None):
     if not cmd:
         return
@@ -441,13 +468,11 @@ def counts(bot, update):
 
 
 def total_count(bot, update):
-    if update.message.from_user.id != admin:
-        return
     x = utils.limits()
     update.message.reply_text(str(x))
 
 
-@utils.parse_request
+@parse_request
 def friend(bot, update, cmd=None):
     if cmd:
         try:
@@ -466,7 +491,7 @@ def friend(bot, update, cmd=None):
         keen.add_event("friend", {"by_user": update.message.from_user.id, "req_user": cmd[0]})
 
 
-@utils.parse_request
+@parse_request
 def like(bot, update, cmd=None):
     print('Call like(): ' + str(update.message.text))
     blacklist = utils.dbget('like')
@@ -514,12 +539,11 @@ tg = Bot(token)
 api = vk_requests.create_api(app_id=app_id, login=login,
                              password=password, phone_number=phone_number,
                              api_version='5.62', scope=scope)
-accounts = 1
+
 q = Queue()
-for i in range(accounts):
-    t = Thread(target=queue_worker)
-    t.setDaemon(True)
-    t.start()
+t = Thread(target=queue_worker)
+t.setDaemon(True)
+t.start()
 
 sleep(1)
 Thread(target=check_unread, args=[]).start()

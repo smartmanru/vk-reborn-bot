@@ -43,7 +43,7 @@ if init_time is None:
 
 bot_name = os.environ.get('BOT_USERNAME')
 cmd_arg_1 = []
-for command in ['/sethook', '/delhook', '/i', '/we', '/d', '/l', '/a']:
+for command in ('/sethook', '/delhook', '/i', '/we', '/d', '/l', '/a'):
     cmd_arg_1.append(command)
     cmd_arg_1.append(command + bot_name)
 
@@ -177,7 +177,7 @@ def parse_request(f):
         data = ''
         txt = args[1].message.text
         cmd = txt.split()
-        if cmd[0] in ['/s', '/s@vkrebornbot']:
+        if cmd[0] in ('/s', '/s@vkrebornbot'):
             data = parser(txt, 2)
         elif cmd[0] in cmd_arg_1:
             data = parser(txt, 1)
