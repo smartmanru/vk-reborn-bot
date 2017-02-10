@@ -308,6 +308,11 @@ def hello(bot, update):
     update.message.reply_text(emojize(utils.help_text + utils.escapize(utils.cmd_list), use_aliases=True), parse_mode='HTML')
 
 
+@restricted
+def hello_admin(bot, update):
+    update.message.reply_text(utils.cmd_admin)
+
+
 @parse_request
 def send(bot, update, cmd=None):
     blacklist = utils.dbget('send')
@@ -343,32 +348,15 @@ def send(bot, update, cmd=None):
 def secrets(bot, update, cmd=None):
     update.message.reply_text('Nope.')
     return
-    if not cmd:
-        tg.send_message(admin, utils.secrets_help)
-        return
-    if cmd[0].startswith('rese'):
-        utils.reset()
-        print('Reset by admin')
-    elif cmd[0].startswith('lyk'):
+    if cmd[0].startswith('lyk'):
         try:
             utils.db_like(str(update.message.reply_to_message.from_user.id), int(cmd[0].split('.')[1]))
         except Exception as e:
-            tg.send_message(admin, utils.secrets_help + '\n' + str(e))
+            tg.send_message(admin, str(e))
     elif cmd[0].startswith('drop'):
         k = cmd[0].split('.')[1]
         utils.dbdropkey(k)
         update.message.reply_text(k + ' droped')
-    elif cmd[0].startswith('db'):
-        try:
-            query = cmd[0].split('.')
-            if query[1] == 'add':
-                utils.dbadd(query[2], str(update.message.reply_to_message.from_user.id))
-                tg.send_message(admin, str(utils.dbget(query[2])))
-            elif query[1] == 'del':
-                utils.dbdel(query[2], str(update.message.reply_to_message.from_user.id))
-                tg.send_message(admin, str(utils.dbget(query[2])))
-        except Exception as e:
-            tg.send_message(admin, utils.secrets_help + '\n' + str(e))
 
 
 @parse_request
@@ -480,6 +468,11 @@ def history_text(user_id, page: int) -> str:
 
 @parse_request
 def history(bot, update, cmd=None):
+    bl = utils.dbget('history')
+    if bl is not None:
+        if str(update.message.from_user.id) in bl:
+            update.message.reply_text(emojize(choice(utils.blacklist_strings), use_aliases=True))
+            return
     if not cmd:
         return
     try:
@@ -567,6 +560,10 @@ def like(bot, update, cmd=None):
 
 def button(bot, update):
     query = update.callback_query
+    bl = utils.dbget('button')
+    if bl is not None:
+        if str(query.from_user.id) in bl:
+            return
     user_id, page = query.data.split('|')
     try:
         keyboard = [InlineKeyboardButton("<", callback_data=user_id + '|' + str(int(page) - 1)),
@@ -575,9 +572,14 @@ def button(bot, update):
             keyboard.pop(0)
         reply_markup = InlineKeyboardMarkup([keyboard])
         msg = history_text(user_id, int(page))
-        bot.sendMessage(chat_id=query.message.chat_id, text=msg, parse_mode = 'HTML', reply_markup=reply_markup)
+        bot.editMessageText(chat_id=query.message.chat_id,
+                            text=msg,
+                            parse_mode = 'HTML',
+                            reply_markup=reply_markup,
+                            message_id=query.message.message_id)
+        keen.add_event("history_button", {"req_user": user_id})
     except Exception as e:
-        bot.sendMessage(str(e))
+        bot.sendMessage(query.message.chat_id, str(e))
         return
 
 
@@ -587,6 +589,36 @@ def send_photo(bot, update):
 
 def anything(bot, update):
     return
+
+
+@restricted
+def update_likes(bot, update):
+    utils.reset()
+    update.message.reply_text('Успешно')
+
+
+# noinspection PyTypeChecker
+@restricted
+@parse_request
+def blacklist_control(bot, update, cmd=None):
+    if not cmd:
+        return
+    try:
+        if cmd[0] == 'add':
+            for i in cmd[1].split():
+                utils.dbadd(i, str(update.message.reply_to_message.from_user.id))
+                tg.send_message(admin, str(utils.dbget(i)))
+                sleep(2)
+        if cmd[0] == 'del':
+            for i in cmd[1].split():
+                utils.dbdel(i, str(update.message.reply_to_message.from_user.id))
+                tg.send_message(admin, str(utils.dbget(i)))
+                sleep(2)
+        update.message.reply_text('Успешно')
+    except Exception as e:
+        tg.send_message(admin, str(e))
+        update.message.reply_text('Nope.')
+
 
 
 tg = Bot(token)
@@ -624,6 +656,9 @@ updater.dispatcher.add_handler(CommandHandler('sethook', sethook))
 updater.dispatcher.add_handler(CommandHandler('delhook', delhook))
 updater.dispatcher.add_handler(CommandHandler('activity', activity))
 updater.dispatcher.add_handler(CommandHandler('we', secrets))
+updater.dispatcher.add_handler(CommandHandler('update_likes', update_likes))
+updater.dispatcher.add_handler(CommandHandler('blacklist', blacklist_control))
+updater.dispatcher.add_handler(CommandHandler('helpme', hello_admin))
 updater.dispatcher.add_handler(MessageHandler(Filters.photo, send_photo))
 updater.dispatcher.add_handler(MessageHandler(Filters.all, anything))
 updater.idle()

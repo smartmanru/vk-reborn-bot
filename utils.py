@@ -21,7 +21,6 @@ r = redis.from_url(os.environ.get("REDIS_URL"), charset="utf-8", decode_response
 
 blacklist_strings = ['Ты :shit:', 'Повтори, я не расслышал :information_desk_person:',
                      'Ооо... Ты в чёрном списке :smiling_imp:']
-secrets_help = '/we db.add/del.send/like/hook\n/we drop.send\n/we lyks.10'
 
 help_text = '<b>Список команд:</b>'
 cmd_list = '''
@@ -36,6 +35,10 @@ cmd_list = '''
 /delhook <id> - перестать пересылать сообщения
 /activity - список последних действий
 '''
+
+cmd_admin = '''
+/update_likes
+/blacklist add|del send|like|hook|history|button'''
 
 init_time = r.get('last_reset')
 if init_time is None:
@@ -177,7 +180,7 @@ def parse_request(f):
         data = ''
         txt = args[1].message.text
         cmd = txt.split()
-        if cmd[0] in ('/s', '/s@vkrebornbot'):
+        if cmd[0] in ('/s', '/s@vkrebornbot', '/blacklist', '/blacklist@vkrebornbot'):
             data = parser(txt, 2)
         elif cmd[0] in cmd_arg_1:
             data = parser(txt, 1)
