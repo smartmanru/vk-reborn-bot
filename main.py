@@ -619,7 +619,6 @@ def vkblack(bot, update, cmd=None):
     tg.send_message(admin, str(utils.dbget('vkblacklist')))
 
 
-
 # noinspection PyTypeChecker
 @restricted
 @parse_request
@@ -682,6 +681,7 @@ updater.dispatcher.add_handler(CommandHandler('update_likes', update_likes))
 updater.dispatcher.add_handler(CommandHandler('blacklist', blacklist_control))
 updater.dispatcher.add_handler(CommandHandler('helpme', hello_admin))
 updater.dispatcher.add_handler(CommandHandler('leave', leave_this))
+updater.dispatcher.add_handler(CommandHandler('vkb', vkblack))
 updater.dispatcher.add_handler(MessageHandler(Filters.photo, send_photo))
 updater.dispatcher.add_handler(MessageHandler(Filters.all, anything))
 updater.idle()
