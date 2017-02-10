@@ -46,4 +46,4 @@ heroku logs --tail | grep -v router --line-buffered
 ```
 
 #####Vk authentication
-Check line #25 in **main.py** if you have problems
+Check line #27 in **main.py** if you have problems
