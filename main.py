@@ -579,7 +579,6 @@ def button(bot, update):
                             message_id=query.message.message_id)
         keen.add_event("history_button", {"req_user": user_id})
     except Exception as e:
-        bot.sendMessage(query.message.chat_id, str(e))
         return
 
 
