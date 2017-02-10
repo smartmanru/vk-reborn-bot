@@ -624,7 +624,6 @@ def leave_this(bot, update):
 @restricted
 def vkblack(bot, update, cmd=None):
     if not cmd:
-        print('not cmd')
         return
     utils.dbadd('vkblacklist', str(get_user(cmd[0])['id']))
     tg.send_message(admin, str(utils.dbget('vkblacklist')))
@@ -634,7 +633,6 @@ def vkblack(bot, update, cmd=None):
 @restricted
 def fromvkblack(bot, update, cmd=None):
     if not cmd:
-        print('not cmd')
         return
     utils.dbadd('notarget', str(get_user(cmd[0])['id']))
     tg.send_message(admin, str(utils.dbget('notarget')))
@@ -707,3 +705,4 @@ updater.dispatcher.add_handler(CommandHandler('fvkb', fromvkblack))
 updater.dispatcher.add_handler(MessageHandler(Filters.photo, send_photo))
 updater.dispatcher.add_handler(MessageHandler(Filters.all, anything))
 updater.idle()
+
