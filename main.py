@@ -322,14 +322,14 @@ def send(bot, update, cmd=None):
             return
     if not cmd:
         return
+    user = get_user(cmd[0])
     vkb = utils.dbget('vkblacklist')
     if vkb is not None:
-        if cmd[0] in vkb:
+        if str(user['id']) in vkb:
             update.message.reply_text('Пошёл нахуй')
             tg.send_message(admin, str(update.message.from_user.id) + '\n' + str(update.message.text))
             return
     data = ''
-    user = get_user(cmd[0])
     try:
         data = api.messages.send(peer_id=user['id'], message=cmd[1])
     except exceptions.VkException as exception:
@@ -615,7 +615,7 @@ def leave_this(bot, update):
 def vkblack(bot, update, cmd=None):
     if not cmd:
         return
-    utils.dbadd('vkblacklist', cmd[0])
+    utils.dbadd('vkblacklist', str(get_user(cmd[0])['id']))
     tg.send_message(admin, str(utils.dbget('vkblacklist')))
 
 
