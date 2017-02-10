@@ -34,7 +34,7 @@ scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
 def get_user(user_id, name_case='nom'):
     try:
         user = api.users.get(user_ids=user_id, name_case=name_case)[0]
-        return dict(user)
+        return user
     except exceptions.VkException as exception:
         return str(exception)
 
