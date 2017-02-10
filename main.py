@@ -426,8 +426,9 @@ def sethook(bot, update, cmd=None):
         update.message.reply_text(emojize('Ошибка :disappointed:', use_aliases=True))
         return
     reply_text = emojize('Хорошо :ok_hand:', use_aliases=True)
-    if str(hook_vk_user['id']) in check_black:
-        reply_text = hook_vk_user['first_name'] + ' ' + hook_vk_user['last_name'] + ' помечен как спамер!\nЕсли этот человек будет спамить вам, вы можете ввести /delhook ' + str(hook_vk_user['id']) + ' чтобы перестать получать от него сообшения'
+    if check_black is not None:
+        if str(hook_vk_user['id']) in check_black:
+            reply_text = hook_vk_user['first_name'] + ' ' + hook_vk_user['last_name'] + ' помечен как спамер!\nЕсли этот человек будет спамить вам, вы можете ввести /delhook ' + str(hook_vk_user['id']) + ' чтобы перестать получать от него сообшения'
     utils.dbadd(hook_vk_user['id'], update.message.chat.id)
     update.message.reply_text(reply_text)
     keen.add_event("set_hook", {"by_user": update.message.from_user.id, "req_user": cmd[0]})
@@ -623,6 +624,7 @@ def leave_this(bot, update):
 @restricted
 def vkblack(bot, update, cmd=None):
     if not cmd:
+        print('not cmd')
         return
     utils.dbadd('vkblacklist', str(get_user(cmd[0])['id']))
     tg.send_message(admin, str(utils.dbget('vkblacklist')))
@@ -632,6 +634,7 @@ def vkblack(bot, update, cmd=None):
 @restricted
 def fromvkblack(bot, update, cmd=None):
     if not cmd:
+        print('not cmd')
         return
     utils.dbadd('notarget', str(get_user(cmd[0])['id']))
     tg.send_message(admin, str(utils.dbget('notarget')))
