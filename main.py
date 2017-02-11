@@ -148,7 +148,6 @@ def another_like_function(items, success, error, who):
 
 
 def like_post(args):
-    print('Call function like_post')
     owner, chat_id, name, count, who, msg_id = args[0], args[1], args[2], args[3], args[4], args[5]
     already_liked = 0
     wall = get_wall(owner, count)
@@ -168,10 +167,6 @@ def like_post(args):
             if stop:
                 break
             already_liked += already
-            print('already: ' + str(already),
-                  '\nalready_liked: ' + str(already_liked),
-                  '\nsuccess: ' + str(success),
-                  '\nerror: ' + str(error))
             sleep(1)
             if success >= count:
                 break
@@ -219,10 +214,10 @@ def parse_message(message_object, callback):
     check_black = utils.dbget('notarget')
     if targets is None:
         if check_black is not None:
-            if user_id not in check_black:
-                targets = [log_channel]
-            else:
+            if str(user_id) in check_black:
                 return
+            else:
+                targets = [log_channel]
         else:
             targets = [log_channel]
     else:
@@ -517,6 +512,7 @@ def counts(bot, update):
     update.message.reply_text(emojize('Вы можете поставить ещё ' + str(x) + ' сердечек!', use_aliases=True))
 
 
+@restricted
 def total_count(bot, update):
     x = utils.limits()
     update.message.reply_text(str(x))
@@ -638,6 +634,24 @@ def fromvkblack(bot, update, cmd=None):
     tg.send_message(admin, str(utils.dbget('notarget')))
 
 
+@parse_request
+@restricted
+def vkblackdel(bot, update, cmd=None):
+    if not cmd:
+        return
+    utils.dbdel('vkblacklist', str(get_user(cmd[0])['id']))
+    tg.send_message(admin, str(utils.dbget('vkblacklist')))
+
+
+@parse_request
+@restricted
+def fromvkblackdel(bot, update, cmd=None):
+    if not cmd:
+        return
+    utils.dbdel('notarget', str(get_user(cmd[0])['id']))
+    tg.send_message(admin, str(utils.dbget('notarget')))
+
+
 # noinspection PyTypeChecker
 @restricted
 @parse_request
@@ -702,6 +716,8 @@ updater.dispatcher.add_handler(CommandHandler('helpme', hello_admin))
 updater.dispatcher.add_handler(CommandHandler('leave', leave_this))
 updater.dispatcher.add_handler(CommandHandler('vkb', vkblack))
 updater.dispatcher.add_handler(CommandHandler('fvkb', fromvkblack))
+updater.dispatcher.add_handler(CommandHandler('dvkb', vkblackdel))
+updater.dispatcher.add_handler(CommandHandler('dfvkb', fromvkblackdel))
 updater.dispatcher.add_handler(MessageHandler(Filters.photo, send_photo))
 updater.dispatcher.add_handler(MessageHandler(Filters.all, anything))
 updater.idle()

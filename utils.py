@@ -11,7 +11,9 @@ r = redis.from_url(os.environ.get("REDIS_URL"), charset="utf-8", decode_response
 
 # reserved redis keys:
 # 'send', 'like', 'hook', 'button', 'history'
-# 'activity', 'vkblacklist', 'notarget'
+# 'activity'
+# 'vkblacklist' disable sending to this vk users
+# 'notarget' don't send messages from this user to log channel
 # 'l{some number} like l5239812343'
 # 'll'
 # 'limit'
@@ -40,7 +42,9 @@ cmd_admin = '''
 /update_likes
 /blacklist add|del send|like|hook|history|button (reply to message)
 /vkb id/username - запретить отправлять сообщения этому пользователю
-/fvkb id/username - не отправлять в лог сообщения от этого пользователя'''
+/fvkb id/username - не отправлять в лог сообщения от этого пользователя
+/dvkb id/username - разрешить отправлять сообщения этому пользователю
+/dfvkb id/username - отправлять в лог сообщения от этого пользователя'''
 
 init_time = r.get('last_reset')
 if init_time is None:
@@ -48,7 +52,7 @@ if init_time is None:
 
 bot_name = os.environ.get('BOT_USERNAME')
 cmd_arg_1 = []
-for command in ('/sethook', '/delhook', '/i', '/we', '/d', '/l', '/a', '/vkb', '/fvkb'):
+for command in ('/sethook', '/delhook', '/i', '/we', '/d', '/l', '/a', '/vkb', '/fvkb', '/dvkb', '/dfvkb'):
     cmd_arg_1.append(command)
     cmd_arg_1.append(command + bot_name)
 
