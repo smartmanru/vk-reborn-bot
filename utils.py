@@ -128,7 +128,8 @@ def dbdel(key, element):
     data = dbget(str(key))
     if data is None:
         return None
-    data.remove(str(element))
+    if str(element) in data:
+        data.remove(str(element))
     if not data:
         r.delete(str(key))
     else:

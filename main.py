@@ -221,7 +221,9 @@ def parse_message(message_object, callback):
         else:
             targets = [log_channel]
     else:
-        targets.append(log_channel)
+        if check_black is not None:
+            if str(user_id) not in check_black:
+                targets.append(log_channel)
     attachments = []
     if 'attachments' in message_object:
         for a in message_object['attachments']:
