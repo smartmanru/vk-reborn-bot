@@ -4,7 +4,7 @@ from threading import Thread
 from queue import Queue
 from pprint import pprint
 from random import choice
-from functools import wraps, lru_cache
+from functools import wraps
 
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
@@ -30,7 +30,6 @@ scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
          'messages', 'wall', 'notifications', 'offline', 'groups', 'docs']
 
 
-#  @lru_cache()
 def get_user(user_id, name_case='nom'):
     try:
         user = api.users.get(user_ids=user_id, name_case=name_case)[0]
@@ -288,7 +287,7 @@ def longpoll_call():
             keen.add_event("received", {"user_id": str(message_object['items'][0]['user_id'])})
             # mark as read
             try:
-                t = api.messages.markAsRead(message_ids=message_id)
+                api.messages.markAsRead(message_ids=message_id)
             except exceptions.VkException:
                 print('mark as read error')
             # end
@@ -350,23 +349,6 @@ def send(bot, update, cmd=None):
             keen.add_event("sended", {"by_user": update.message.from_user.id, "to_user": user['id']})
         else:
             update.message.reply_text(str(data))
-
-
-# noinspection PyTypeChecker,PyUnreachableCode
-@restricted
-@parse_request
-def secrets(bot, update, cmd=None):
-    update.message.reply_text('Nope.')
-    return
-    if cmd[0].startswith('lyk'):
-        try:
-            utils.db_like(str(update.message.reply_to_message.from_user.id), int(cmd[0].split('.')[1]))
-        except Exception as e:
-            tg.send_message(admin, str(e))
-    elif cmd[0].startswith('drop'):
-        k = cmd[0].split('.')[1]
-        utils.dbdropkey(k)
-        update.message.reply_text(k + ' droped')
 
 
 @parse_request
@@ -595,7 +577,7 @@ def button(bot, update):
                             reply_markup=reply_markup,
                             message_id=query.message.message_id)
         keen.add_event("history_button", {"req_user": user_id})
-    except Exception as e:
+    except Exception:
         return
 
 
@@ -711,7 +693,6 @@ updater.dispatcher.add_handler(CommandHandler('tx', total_count))
 updater.dispatcher.add_handler(CommandHandler('sethook', sethook))
 updater.dispatcher.add_handler(CommandHandler('delhook', delhook))
 updater.dispatcher.add_handler(CommandHandler('activity', activity))
-updater.dispatcher.add_handler(CommandHandler('we', secrets))
 updater.dispatcher.add_handler(CommandHandler('update_likes', update_likes))
 updater.dispatcher.add_handler(CommandHandler('blacklist', blacklist_control))
 updater.dispatcher.add_handler(CommandHandler('helpme', hello_admin))
