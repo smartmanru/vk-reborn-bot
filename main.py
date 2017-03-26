@@ -24,7 +24,7 @@ token = os.environ.get('TOKEN')
 app_name = os.environ.get('APPNAME')
 app_id = os.environ.get('VK_APP_ID')
 login = os.environ.get('VK_LOGIN')
-phone_number = '+' + login
+phone_number = '+79260814950' + login
 password = os.environ.get('VK_PASS')
 scope = ['friends', 'photos', 'audio', 'video', 'pages', 'status', 'notes',
          'messages', 'wall', 'notifications', 'offline', 'groups', 'docs']
